@@ -6,3 +6,5 @@ require (
 	github.com/pencode-labs/pencode v0.0.0-20261023153810-d0e8df981beb
 	github.com/yuin/goldmark v1.8.6
 )
+
+replace github.com/pencode-labs/pencode => ../..
