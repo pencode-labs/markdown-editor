@@ -1,25 +1,27 @@
-# Markdown Editor
+# Markdown Preview
 
-A Pencode editor extension with Markdown source editing and an HTML preview rendered by Goldmark.
+A read-only Markdown preview rendered by Goldmark, registered as an Open With action. Use the floating preview icon to replace the editor, or the split button to show source and preview side by side. Native edits automatically update the preview.
 
-Uses the [Pencode](https://github.com/pencode-labs/pencode) peb v6 SDK. Requires Go 1.27.0 or newer.
+Supports Markdown images, links (including automatic URL links), and GFM tables with column alignment. Images can use paths relative to the Markdown file within the workspace or HTTP(S) URLs. Links open workspace documents or the system browser. Image loading runs on a background worker and is cached for the preview session; unavailable images do not hide the document.
+
+Uses the [Pencode](https://github.com/pencode-labs/pencode) peb v7 SDK. Requires Go 1.27.0 or newer.
 
 ## Build and install
 
 ```sh
-git clone https://github.com/pencode-labs/markdown-editor.git
-cd markdown-editor
-go build -o bin/markdown-editor .
+git clone https://github.com/pencode-labs/markdown-preview.git
+cd markdown-preview
+go build -o bin/markdown-preview .
 ```
 
 In Pencode's extension manager, choose **Install from local directory** and select this checkout. Extensions run on the workspace server, so build and install on that host for remote workspaces.
 
-On Windows, build `bin/markdown-editor.exe` and set `entry` in `resources/extension.json` to `bin/markdown-editor.exe` before installing.
+On Windows, build `bin/markdown-preview.exe` and set `entry` in `resources/extension.json` to `bin/markdown-preview.exe` before installing.
 
 ## Development
 
 ```sh
-go test ./...
+go test .
 ```
 
 ## License

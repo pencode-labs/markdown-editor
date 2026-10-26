@@ -1,4 +1,2 @@
-github.com/pencode-labs/pencode v0.0.0-20261023153810-d0e8df981beb h1:2Xfrtg6lcTth+ydjUITHLM+9sLNIF4uecn+WepdBzjQ=
-github.com/pencode-labs/pencode v0.0.0-20261023153810-d0e8df981beb/go.mod h1:UMS4GKTkNPRKt+NidqaNGcGQl5IFMHp0Vp5+FH8yAbA=
-github.com/yuin/goldmark v1.8.6 h1:d0VcaP1sx9GkFVkoW+KtggpGi2KZ965i14b0+bDQST4=
-github.com/yuin/goldmark v1.8.6/go.mod h1:ip/1k0VRfGynBgxOz0yCqHrbZXhcjxyuS66Brc7iBKg=
+github.com/yuin/goldmark/v2 v2.1.9 h1:C5AZWQOm71NKdpMapPEYEB/UIRHDiMb3h5AJRHxzkXQ=
+github.com/yuin/goldmark/v2 v2.1.9/go.mod h1:G6M4/qOFtfn01/o14BU1UR2Lo5N3S9Qo7xCuz/sHjGQ=

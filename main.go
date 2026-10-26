@@ -1,48 +1,63 @@
-// Markdown editor demonstrates a retained HTML/CSS editor with native input
-// events and host-owned text edits, save and undo history.
+// Markdown preview is an Open With action; the host owns source editing and layout.
 package main
 
 import (
 	"bytes"
 	_ "embed"
 	"fmt"
-	"html"
+	"net/url"
 	"os"
+	"strings"
 
 	"github.com/pencode-labs/pencode/peb"
-	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/v2/ast"
+	"github.com/yuin/goldmark/v2/extension"
+	"github.com/yuin/goldmark/v2/parser"
+	"github.com/yuin/goldmark/v2/renderer/html"
+	"github.com/yuin/goldmark/v2/text"
+	"github.com/yuin/goldmark/v2/util"
 )
 
 //go:embed resources/editor.css
 var editorCSS string
 
-func markdownEditor(message peb.EditorMessage) (peb.EditorReply, error) {
+var markdownParser = parser.New(parser.WithExtensions(extension.TableParser, extension.NewLinkifyParser()))
+var markdownRenderer = html.New(html.WithExtensions(extension.TableHTMLRenderer))
+
+func markdownPreview(message peb.EditorMessage) (peb.EditorReply, error) {
 	if message.Editor != "markdown" || message.Binary {
 		return peb.EditorReply{}, fmt.Errorf("unsupported document")
 	}
-	if message.Event.Kind == "input" && message.Event.Ref == "source" {
-		return peb.EditorReply{Content: &message.Event.Value}, nil
-	}
-	if message.Event.Kind != "open" && message.Event.Kind != "documentchange" && message.Event.Ref != "refresh" {
+	if message.Event.Kind != "open" && message.Event.Kind != "documentchange" {
 		return peb.EditorReply{}, nil
 	}
 	var preview bytes.Buffer
-	if err := goldmark.Convert([]byte(message.Content), &preview); err != nil {
+	document := markdownParser.ParseStringSource(message.Content)
+	if message.Path != "" {
+		base := url.URL{Path: "/" + strings.TrimPrefix(strings.ReplaceAll(message.Path, "\\", "/"), "/")}
+		_ = ast.Walk(document, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
+			if image, ok := node.(*ast.Image); ok && entering {
+				if source, err := url.Parse(image.Destination.Value(util.StringToReadOnlyBytes(message.Content))); err == nil && source.Scheme == "" && source.Host == "" {
+					image.Destination = text.NewSingleLineValue(base.ResolveReference(source).String(), nil)
+				}
+			}
+			return ast.WalkContinue, nil
+		})
+	}
+	if err := markdownRenderer.RenderStringSource(&preview, message.Content, document); err != nil {
 		return peb.EditorReply{}, err
 	}
-	// Content is escaped for the textarea's raw-text context. Goldmark's
-	// default renderer omits raw HTML from the Markdown preview.
+	// Goldmark's default renderer omits raw HTML from the Markdown preview.
 	return peb.EditorReply{View: &peb.EditorView{
-		HTML:   `<div class="markdown-editor"><header><strong>Markdown</strong><button type="button" data-ref="refresh">刷新预览</button></header><div class="markdown-columns"><textarea data-ref="source" aria-label="Markdown 源码" spellcheck="false">` + html.EscapeString(message.Content) + `</textarea><article aria-label="Markdown 预览">` + preview.String() + `</article></div></div>`,
-		CSS:    editorCSS,
-		Events: []peb.EditorBinding{{Ref: "source", Kind: "input"}, {Ref: "refresh", Kind: "click"}},
+		HTML: `<article class="markdown-preview" aria-label="Markdown 预览">` + preview.String() + `</article>`,
+		CSS:  editorCSS,
 	}}, nil
 }
 
 func main() {
-	err := peb.ServeEditors(os.Stdin, os.Stdout, peb.Contributions{Editors: []peb.Editor{
-		{ID: "markdown", Label: "Markdown 编辑与预览", Selectors: []peb.DocumentSelector{{Match: peb.FileSuffix, Pattern: ".md"}, {Match: peb.FileSuffix, Pattern: ".markdown"}}},
-	}}, markdownEditor)
+	err := peb.ServeEditors(os.Stdin, os.Stdout, peb.Contributions{Actions: []peb.Action{
+		{ID: "markdown", Text: "Markdown 预览", Tooltip: "Markdown 预览", Icon: "resources/preview.svg", Location: peb.OpenWith, Selectors: []peb.DocumentSelector{{Match: peb.FileSuffix, Pattern: ".md"}, {Match: peb.FileSuffix, Pattern: ".markdown"}}},
+	}}, markdownPreview)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
